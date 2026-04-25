@@ -232,8 +232,8 @@
     },
 
     "valuacion": {
-      "precio_total_usd": 360000,
-      "precio_m2_usd": 10,
+      "precio_total_usd": "XXXX",
+      "precio_m2_usd": "XXXX",
       "fecha_valuacion": "2026-04",
       "notas": 0
     }
@@ -309,8 +309,8 @@
     },
 
     "valuacion": {
-      "precio_total_usd": 475000,
-      "precio_m2_usd": 0,
+      "precio_total_usd": "XXXX",
+      "precio_m2_usd": "XXXX",
       "fecha_valuacion": "2026-04",
       "notas": "En cuanto a los indicadores de subdivisión, la zona RCmb establece una parcela mínima de 375 m² con un frente mínimo de 15 metros, lo que configura un tejido de densidad media baja orientado a desarrollos residenciales con integración comercial. Asimismo, la normativa contempla la posibilidad de desarrollar proyectos urbanísticos integrales, para los cuales se exige una superficie mínima de 2.000 m² para el predio base, permitiendo luego una mayor flexibilidad en la subdivisión interna, sujeta a aprobación municipal y al cumplimiento de las condiciones de infraestructura y equipamiento correspondientes."
     }
@@ -388,8 +388,8 @@
     },
 
     "valuacion": {
-      "precio_total_usd": 475000,
-      "precio_m2_usd": 10,
+      "precio_total_usd": "XXXX",
+      "precio_m2_usd": "XXXX",
       "fecha_valuacion": "2026-04",
       "notas": 0
     }
