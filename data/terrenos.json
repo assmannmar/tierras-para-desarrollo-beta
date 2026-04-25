@@ -153,8 +153,8 @@
     },
 
     "valuacion": {
-      "precio_total_usd": 250000,
-      "precio_m2_usd": 3.87,
+      "precio_total_usd": "XXXX",
+      "precio_m2_usd": "XXXX",
       "fecha_valuacion": "2026-04",
       "notas": "El terreno no resulta atractivo para un proyecto de desarrollo en su estado actual, debido a que por el frente de la fracción pasa una línea eléctrica de 33 kW, la cual impone una restricción de edificación, lo que afecta la factibilidad del proyecto y reduce la superficie útil disponible."
     }
