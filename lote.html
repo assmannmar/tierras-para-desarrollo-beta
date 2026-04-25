@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ficha del Lote | CADEMA Bienes Raíces</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --red:        #C1272D;
+      --red-dark:   #9B1E23;
+      --red-light:  #E0535A;
+      --red-glow:   rgba(193,39,45,0.18);
+      --black:      #0A0A0A;
+      --black-mid:  #141414;
+      --black-soft: #1E1E1E;
+      --white:      #FFFFFF;
+      --off-white:  #F7F4F0;
+      --cream:      #EDE9E3;
+      --gray-light: #DDD9D3;
+      --gray:       #8A8680;
+      --gray-dark:  #4A4642;
+      --muted:      #6A6662;
+      --topbar-h:   58px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--off-white);
+      color: var(--black);
+      min-height: 100vh;
+    }
+
+    /* ══ TOPBAR ══ */
+    .topbar {
+      background: var(--black);
+      padding: 0 20px;
+      height: var(--topbar-h);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      z-index: 9999;
+    }
+
+    .topbar::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--red) 0%, var(--red-dark) 50%, transparent 100%);
+    }
+
+    .topbar-back {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--gray);
+      transition: color 0.2s;
+      white-space: nowrap;
+    }
+
+    .topbar-back:hover { color: var(--red); }
+
+    .topbar-center {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      align-items: center;
+    }
+
+    .topbar-logo-img {
+      height: 30px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    .topbar-logo-fallback {
+      display: none;
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--white);
+      letter-spacing: 1.5px;
+    }
+
+    .btn-pdf {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--white);
+      border: 1px solid rgba(255,255,255,0.15);
+      background: transparent;
+      padding: 8px 16px;
+      cursor: pointer;
+      border-radius: 2px;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .btn-pdf:hover {
+      background: var(--red);
+      border-color: var(--red);
+    }
+
+    .btn-pdf.loading {
+      opacity: 0.55;
+      cursor: wait;
+      pointer-events: none;
+    }
+
+    /* ocultar texto del botón PDF en móvil, solo ícono */
+    .btn-pdf-text { display: inline; }
+
+    /* ══ PAGE BODY ══ */
+    .page-body { padding-top: var(--topbar-h); }
+
+    /* ══ FICHA ══ */
+    .ficha {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 32px 20px 56px;
+    }
+
+    /* ══ HEADER BLOCK ══ */
+    .ficha-header {
+      background: var(--black);
+      border-top: 3px solid var(--red);
+      padding: 36px 40px 30px;
+      margin-bottom: 3px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ficha-header::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 300px; height: 300px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(193,39,45,0.07) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .ficha-ref {
+      font-size: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      color: var(--red);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ficha-ref::before {
+      content: '';
+      width: 20px;
+      height: 1px;
+      background: var(--red);
+    }
+
+    .ficha-titulo {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 38px;
+      font-weight: 700;
+      color: var(--white);
+      line-height: 1.08;
+      margin-bottom: 7px;
+    }
+
+    .ficha-ciudad {
+      font-size: 10px;
+      font-weight: 500;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      margin-bottom: 24px;
+    }
+
+    /* KPI row */
+    .ficha-kpis {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+    }
+
+    .kpi {
+      background: var(--black-soft);
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      border-top: 2px solid transparent;
+    }
+
+    .kpi.highlight {
+      border-top-color: var(--red);
+      background: rgba(193,39,45,0.09);
+    }
+
+    .kpi-label {
+      font-size: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--gray);
+    }
+
+    .kpi-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--white);
+      line-height: 1;
+    }
+
+    .kpi.highlight .kpi-value { color: var(--red-light); }
+
+    .kpi-sub {
+      font-size: 10px;
+      color: var(--gray);
+    }
+
+    /* ══ BODY GRID ══ */
+    .ficha-body {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+      margin-bottom: 3px;
+    }
+
+    .seccion {
+      background: var(--white);
+      padding: 26px 28px;
+    }
+
+    .seccion.span2 { grid-column: span 2; }
+
+    .sec-titulo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--gray-light);
+    }
+
+    .sec-num {
+      font-size: 8px;
+      font-weight: 700;
+      color: var(--white);
+      background: var(--red);
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      letter-spacing: 0;
+    }
+
+    .sec-nombre {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--red);
+    }
+
+    /* ══ MINI MAP ══ */
+    #mini-mapa {
+      height: 200px;
+      width: 100%;
+      border: 1px solid var(--gray-light);
+      border-radius: 2px;
+      margin-top: 14px;
+      z-index: 1;
+      position: relative;
+    }
+
+    /* ══ DATA TABLE ══ */
+    .datos-tabla { width: 100%; border-collapse: collapse; }
+    .datos-tabla tr { border-bottom: 1px solid var(--gray-light); }
+    .datos-tabla tr:last-child { border-bottom: none; }
+
+    .datos-tabla td {
+      padding: 9px 0;
+      font-size: 13px;
+      vertical-align: top;
+      line-height: 1.5;
+    }
+
+    .datos-tabla td:first-child {
+      color: var(--muted);
+      width: 42%;
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      font-weight: 600;
+      padding-right: 12px;
+      padding-top: 10px;
+    }
+
+    .datos-tabla td:last-child {
+      color: var(--black-soft);
+      font-weight: 400;
+    }
+
+    /* ══ DESC TEXT ══ */
+    .texto-desc {
+      font-size: 14px;
+      line-height: 1.85;
+      color: var(--black-soft);
+      font-weight: 300;
+    }
+
+    .addr-line {
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      line-height: 1.5;
+    }
+
+    .addr-line strong { color: var(--black-soft); font-weight: 600; }
+
+    /* ══ ZONING ══ */
+    .zona-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      padding: 6px 13px;
+      border-radius: 2px;
+      margin-bottom: 10px;
+    }
+
+    .zona-badge.actual {
+      background: var(--off-white);
+      color: var(--gray-dark);
+      border: 1px solid var(--gray-light);
+    }
+
+    .zona-badge.potencial {
+      background: rgba(193,39,45,0.07);
+      color: var(--red-dark);
+      border: 1px solid rgba(193,39,45,0.22);
+    }
+
+    .zona-label {
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--gray);
+      margin-bottom: 6px;
+    }
+
+    .zona-obs {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.75;
+      font-style: italic;
+      margin-top: 14px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--gray-light);
+    }
+
+    /* ══ POTENTIAL ══ */
+    .uso-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      background: var(--black);
+      color: var(--white);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      padding: 9px 16px;
+      margin-bottom: 14px;
+      border-radius: 2px;
+    }
+
+    .uso-badge::before {
+      content: '↳';
+      color: var(--red);
+      font-size: 13px;
+    }
+
+    .potencial-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 3px;
+      margin-bottom: 16px;
+    }
+
+    .pot-item {
+      background: var(--off-white);
+      padding: 14px 16px;
+      border-top: 2px solid var(--gray-light);
+      border-radius: 2px;
+    }
+
+    .pot-item.highlight-pot { border-top-color: var(--red); }
+
+    .pot-label {
+      font-size: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--gray);
+      margin-bottom: 5px;
+    }
+
+    .pot-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 26px;
+      font-weight: 600;
+      color: var(--black);
+    }
+
+    /* ══ VALUATION ══ */
+    .valuacion-hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3px;
+      margin-bottom: 12px;
+    }
+
+    .val-item {
+      padding: 22px 24px;
+      background: var(--black);
+      border-radius: 2px;
+    }
+
+    .val-label {
+      font-size: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2.5px;
+      color: rgba(255,255,255,0.32);
+      margin-bottom: 8px;
+    }
+
+    .val-value {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--red-light);
+      line-height: 1;
+    }
+
+    .val-sub {
+      font-size: 10px;
+      color: rgba(255,255,255,0.28);
+      margin-top: 5px;
+    }
+
+    .val-nota {
+      font-size: 13px;
+      font-weight: 300;
+      color: var(--gray-dark);
+      line-height: 1.75;
+      padding: 14px 18px;
+      background: rgba(193,39,45,0.04);
+      border-left: 3px solid var(--red);
+      border-radius: 0 2px 2px 0;
+    }
+
+    /* ══ GALERÍA ══ */
+    .galeria-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+    }
+
+    .galeria-grid img {
+      width: 100%;
+      aspect-ratio: 4/3;
+      object-fit: cover;
+      display: block;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      border-radius: 2px;
+    }
+
+    .galeria-grid img:first-child {
+      grid-column: span 3;
+      aspect-ratio: 16/7;
+    }
+
+    .galeria-grid img:hover { opacity: 0.88; }
+
+    /* Lightbox */
+    .lightbox {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 99999;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .lightbox.open { display: flex; }
+
+    .lightbox img {
+      max-width: 92vw;
+      max-height: 88vh;
+      object-fit: contain;
+      border-radius: 2px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: 18px; right: 22px;
+      color: rgba(255,255,255,0.6);
+      font-size: 28px;
+      cursor: pointer;
+      line-height: 1;
+      transition: color 0.15s;
+      background: none;
+      border: none;
+    }
+
+    .lightbox-close:hover { color: var(--red); }
+
+    @media (max-width: 768px) {
+      .galeria-grid { grid-template-columns: 1fr 1fr; }
+      .galeria-grid img:first-child { grid-column: span 2; }
+    }
+    
+    /* ══ FOOTER ══ */
+    .ficha-footer {
+      background: var(--black);
+      border-top: 2px solid var(--red);
+      margin-top: 3px;
+    }
+
+    .ficha-footer-inner {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    .footer-top {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr auto;
+      gap: 28px;
+      padding: 36px 0 28px;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+    }
+
+    .footer-office-label {
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--red);
+      margin-bottom: 10px;
+    }
+
+    .footer-office-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--gray);
+      line-height: 1.6;
+      margin-bottom: 4px;
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    a.footer-office-line:hover { color: var(--white); }
+
+    .footer-office-line strong {
+      color: var(--white);
+      font-weight: 600;
+    }
+
+    .footer-logo-col {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 14px;
+    }
+
+    .footer-logo-img {
+      height: 28px;
+      width: auto;
+      opacity: 0.85;
+    }
+
+    .footer-logo-fallback {
+      display: none;
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--white);
+    }
+
+    .footer-social {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .footer-social a {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px; height: 26px;
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 2px;
+      color: var(--gray);
+      text-decoration: none;
+      font-size: 10px;
+      transition: all 0.18s;
+    }
+
+    .footer-social a:hover {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    .footer-bottom {
+      padding: 14px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .footer-copy {
+      font-size: 10px;
+      color: var(--gray-dark);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    /* ══ LOADING / ERROR ══ */
+    .loading {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 14px;
+      color: var(--gray);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+    }
+
+    .loading-mark {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--red);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: pulse 1.8s ease-in-out infinite;
+    }
+
+    .loading-mark span {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 700;
+      font-size: 24px;
+      color: var(--white);
+      line-height: 1;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.7; transform: scale(0.92); }
+    }
+
+    .error-msg {
+      text-align: center;
+      padding: 60px 24px;
+    }
+
+    /* ══ RESPONSIVE — MÓVIL ══ */
+    @media (max-width: 768px) {
+      :root { --topbar-h: 54px; }
+
+      /* Topbar: ocultar centro en móvil para no solapar */
+      .topbar-center { display: none; }
+
+      /* PDF: solo ícono */
+      .btn-pdf-text { display: none; }
+      .btn-pdf { padding: 8px 12px; letter-spacing: 0; }
+
+      .ficha { padding: 20px 14px 48px; }
+
+      /* Header de ficha */
+      .ficha-header { padding: 24px 20px 22px; }
+      .ficha-titulo { font-size: 28px; }
+      .ficha-ciudad { font-size: 9px; letter-spacing: 2px; margin-bottom: 18px; }
+
+      /* KPIs: 2 columnas en móvil */
+      .ficha-kpis {
+        grid-template-columns: 1fr 1fr;
+        gap: 2px;
+      }
+
+      .kpi { padding: 12px 14px; }
+      .kpi-value { font-size: 20px; }
+
+      /* Body grid: 1 columna en móvil */
+      .ficha-body {
+        grid-template-columns: 1fr;
+        gap: 3px;
+      }
+
+      .seccion { padding: 20px 18px; }
+      .seccion.span2 { grid-column: span 1; }
+
+      /* Tabla de datos más compacta */
+      .datos-tabla td { font-size: 12px; padding: 8px 0; }
+      .datos-tabla td:first-child { font-size: 8.5px; width: 38%; }
+
+      /* Texto descriptivo */
+      .texto-desc { font-size: 13px; line-height: 1.75; }
+
+      /* Potencial: 2 columnas */
+      .potencial-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 3px;
+      }
+
+      /* El tercer item ocupa full en 2 cols */
+      .pot-item.highlight-pot {
+        grid-column: span 2;
+      }
+
+      .pot-value { font-size: 22px; }
+
+      /* Valuación: 1 columna */
+      .valuacion-hero {
+        grid-template-columns: 1fr;
+        gap: 3px;
+      }
+
+      .val-item { padding: 18px 20px; }
+      .val-value { font-size: 24px; }
+
+      /* Mini mapa */
+      #mini-mapa { height: 180px; }
+
+      /* uso badge en móvil puede wrappear */
+      .uso-badge {
+        font-size: 9px;
+        padding: 8px 12px;
+        letter-spacing: 1.5px;
+      }
+
+      /* Footer: 1 columna */
+      .footer-top {
+        grid-template-columns: 1fr 1fr;
+        gap: 24px;
+        padding: 28px 0 22px;
+      }
+
+      .footer-logo-col {
+        grid-column: span 2;
+        align-items: flex-start;
+        flex-direction: row;
+        align-items: center;
+        justify-content: space-between;
+      }
+
+      .footer-bottom {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        padding: 14px 0;
+      }
+
+      .footer-copy { font-size: 9px; }
+    }
+
+    @media (max-width: 480px) {
+      .footer-top { grid-template-columns: 1fr; }
+      .footer-logo-col { grid-column: span 1; }
+    }
+
+    /* ══ PRINT ══ */
+    @media print {
+      .topbar, .btn-pdf, .ficha-footer { display: none !important; }
+      .page-body { padding-top: 0 !important; }
+      body { background: white; }
+      .ficha { margin: 0; padding: 0; max-width: 100%; }
+      #mini-mapa { height: 160px; }
+    }
+  </style>
+</head>
+  <body>
+
+    <nav class="topbar">
+      <a href="index.html" class="topbar-back">
+        <svg width="14" height="10" viewBox="0 0 14 10" fill="none">
+          <path d="M1 5H13M1 5L5 1M1 5L5 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Volver
+      </a>
+
+      <div class="topbar-center">
+        <img
+          class="topbar-logo-img"
+          src="https://cademaprop-web.vercel.app/logos/logo.png"
+          alt="CADEMA Bienes Raíces"
+          onerror="this.style.display='none'; document.querySelector('.topbar-logo-fallback').style.display='block'"
+        >
+        <span class="topbar-logo-fallback">CADEMA</span>
+      </div>
+
+      <button class="btn-pdf" id="btnPDF" onclick="descargarPDF()">
+        <svg width="13" height="14" viewBox="0 0 13 14" fill="none">
+          <path d="M1 10V12C1 12.5523 1.44772 13 2 13H11C11.5523 13 12 12.5523 12 12V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M6.5 1V9M6.5 9L4 6.5M6.5 9L9 6.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="btn-pdf-text">Descargar PDF</span>
+      </button>
+    </nav>
+
+    <div class="page-body">
+      <div class="ficha" id="ficha">
+        <div class="loading">
+          <div class="loading-mark"><span>C</span></div>
+          <div>Cargando ficha del lote…</div>
+        </div>
+      </div>
+
+      <footer class="ficha-footer" id="fichaPie" style="display:none;">
+        <div class="ficha-footer-inner">
+          <div class="footer-top">
+
+            <div>
+              <div class="footer-office-label">Campana</div>
+              <a href="https://maps.app.goo.gl/Qj1sZve3ELwJ8niWA." class="footer-office-line" target="_blank" rel="noopener">
+                📍 <span>Av. Varela 420, Campana</span>
+              </a>
+              <a href="https://wa.me/5493489368518" class="footer-office-line" target="_blank" rel="noopener">
+                📱 <strong>+54 9 3489 368518</strong>
+              </a>
+              <div class="footer-office-line">🕒 Lun–Vie 10 a 18 hs</div>
+            </div>
+
+            <div>
+              <div class="footer-office-label">Zárate</div>
+              <a href="https://maps.app.goo.gl/YtUpnjzds6qvJinLA" class="footer-office-line" target="_blank" rel="noopener">
+                📍 <span>Av. Gallesio 55, Zárate</span>
+              </a>
+              <a href="https://wa.me/5493487624830" class="footer-office-line" target="_blank" rel="noopener">
+                📱 <strong>+54 9 3487 624830</strong>
+              </a>
+              <div class="footer-office-line">🕒 Lun–Vie 10 a 18 hs</div>
+            </div>
+
+            <div>
+              <div class="footer-office-label">Industrias</div>
+              <a href="https://maps.app.goo.gl/5m4Ag1wm4Tsod2qC8" class="footer-office-line" target="_blank" rel="noopener">
+                📍 <span>Parque Industrial · Ruta 6, km 180</span>
+              </a>
+              <a href="https://wa.me/5493489517998" class="footer-office-line" target="_blank" rel="noopener">
+                📱 <strong>+54 9 3489 517998</strong>
+              </a>
+            </div>
+
+            <div class="footer-logo-col">
+              <img
+                class="footer-logo-img"
+                src="https://cademaprop-web.vercel.app/logos/logo.png"
+                alt="CADEMA Bienes Raíces"
+                onerror="this.style.display='none'; document.querySelector('.footer-logo-fallback').style.display='block'"
+              >
+              <span class="footer-logo-fallback">CADEMA</span>
+
+              <div class="footer-social">
+                <a href="https://www.facebook.com/cademabienesraices" title="Facebook" target="_blank" rel="noopener">f</a>
+                <a href="https://www.instagram.com/cademabienesraices" title="Instagram" target="_blank" rel="noopener">ig</a>
+                <a href="https://www.instagram.com/cademaindustrias" title="Instagram Industrias" target="_blank" rel="noopener">ig₂</a>
+                <a href="https://www.linkedin.com/company/cademabienesraices" title="LinkedIn" target="_blank" rel="noopener">in</a>
+                <a href="https://www.tiktok.com/@cademabienesraices" title="TikTok" target="_blank" rel="noopener">tt</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="footer-bottom">
+            <span class="footer-copy">© 2026 CADEMA Bienes Raíces. Todos los derechos reservados.</span>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="js/detalle.js"></script>
+
+      <script>
+        const observer = new MutationObserver(() => {
+          const ficha = document.getElementById('ficha');
+          if (ficha && !ficha.querySelector('.loading')) {
+            document.getElementById('fichaPie').style.display = 'block';
+            observer.disconnect();
+          }
+        });
+        observer.observe(document.getElementById('ficha'), { childList: true, subtree: true });
+
+        function descargarPDF() {
+          const btn = document.getElementById('btnPDF');
+          btn.classList.add('loading');
+          btn.querySelector('.btn-pdf-text') && (btn.querySelector('.btn-pdf-text').textContent = 'Generando…');
+          setTimeout(() => {
+            window.print();
+            setTimeout(() => {
+              btn.classList.remove('loading');
+              const txt = btn.querySelector('.btn-pdf-text');
+              if (txt) txt.textContent = 'Descargar PDF';
+            }, 500);
+          }, 150);
+        }
+        function abrirLightbox(src) {
+          document.getElementById('lightboxImg').src = src;
+          document.getElementById('lightbox').classList.add('open');
+        }
+        function cerrarLightbox() {
+          document.getElementById('lightbox').classList.remove('open');
+        }
+        document.addEventListener('keydown', e => {
+          if (e.key === 'Escape') cerrarLightbox();
+        });
+      </script>
+
+      <div class="lightbox" id="lightbox" onclick="cerrarLightbox()">
+        <button class="lightbox-close" onclick="cerrarLightbox()">✕</button>
+        <img id="lightboxImg" src="" alt="">
+      </div>
+
+  </body>
+</html>

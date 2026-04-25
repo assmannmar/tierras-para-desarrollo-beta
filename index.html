@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Macrolotes | CADEMA Bienes Raíces</title>
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --red:        #C1272D;
+      --red-dark:   #9B1E23;
+      --red-glow:   rgba(193,39,45,0.15);
+      --black:      #0A0A0A;
+      --black-mid:  #141414;
+      --black-soft: #1E1E1E;
+      --white:      #FFFFFF;
+      --off-white:  #F7F4F0;
+      --cream:      #EDE9E3;
+      --gray-light: #DDD9D3;
+      --gray:       #8A8680;
+      --gray-dark:  #4A4642;
+      --sidebar-w:  360px;
+      --header-h:   58px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      font-family: 'Outfit', sans-serif;
+      background: var(--off-white);
+      color: var(--black);
+      height: 100%;
+      overflow: hidden;
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ══ HEADER ══ */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      height: var(--header-h);
+      background: var(--black);
+      flex-shrink: 0;
+      z-index: 1000;
+      position: relative;
+    }
+
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--red) 0%, var(--red-dark) 50%, transparent 100%);
+    }
+
+    .logo-wrap {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+    }
+
+    .logo-img {
+      height: 34px;
+      width: auto;
+      object-fit: contain;
+      display: block;
+    }
+
+    .logo-fallback {
+      display: none;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .logo-fallback-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 700;
+      font-size: 20px;
+      color: var(--white);
+      letter-spacing: 1.5px;
+      line-height: 1;
+    }
+
+    .logo-fallback-sub {
+      font-family: 'Outfit', sans-serif;
+      font-size: 8px;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 4px;
+    }
+
+    .header-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 9px;
+      font-weight: 500;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    /* Ocultar texto del badge en móvil muy chico */
+    @media (max-width: 380px) {
+      .header-badge-text { display: none; }
+    }
+
+    .badge-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 8px var(--red);
+      animation: pulse 2s ease-in-out infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* ══ LAYOUT ══ */
+    .layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ══ SIDEBAR — desktop ══ */
+    .sidebar {
+      width: var(--sidebar-w);
+      flex-shrink: 0;
+      background: var(--white);
+      border-right: 1px solid var(--gray-light);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 500;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar-header {
+      background: var(--black-soft);
+      padding: 18px 24px 16px;
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .sidebar-header::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, var(--red) 0%, transparent 70%);
+    }
+
+    .sidebar-header-eyebrow {
+      font-family: 'Outfit', sans-serif;
+      font-size: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      color: var(--red);
+      margin-bottom: 4px;
+    }
+
+    .sidebar-header h2 {
+      font-family: 'Cormorant Garamond', serif;
+      font-weight: 600;
+      font-size: 20px;
+      color: var(--white);
+      letter-spacing: 0.3px;
+      line-height: 1.2;
+    }
+
+    .sidebar-header p {
+      font-family: 'Outfit', sans-serif;
+      font-size: 11px;
+      font-weight: 300;
+      color: var(--gray);
+      margin-top: 3px;
+    }
+
+    .filter-bar {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--gray-light);
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      background: var(--off-white);
+      flex-shrink: 0;
+    }
+
+    .filter-btn {
+      font-family: 'Outfit', sans-serif;
+      font-size: 9px;
+      font-weight: 600;
+      padding: 5px 13px;
+      border: 1px solid var(--gray-light);
+      background: transparent;
+      color: var(--gray-dark);
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      border-radius: 2px;
+      transition: all 0.18s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .filter-btn:hover { border-color: var(--red); color: var(--red); }
+    .filter-btn.active {
+      background: var(--red);
+      color: var(--white);
+      border-color: var(--red);
+    }
+
+    .lote-list { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .lote-list::-webkit-scrollbar { width: 2px; }
+    .lote-list::-webkit-scrollbar-thumb { background: var(--red); border-radius: 2px; }
+
+    .lote-card {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--gray-light);
+      cursor: pointer;
+      transition: background 0.15s;
+      position: relative;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .lote-card::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: transparent;
+      transition: background 0.2s;
+    }
+
+    .lote-card:hover { background: var(--off-white); }
+    .lote-card.active { background: var(--cream); }
+    .lote-card.active::before { background: var(--red); }
+
+    .lote-card-ciudad {
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--red);
+      margin-bottom: 4px;
+    }
+
+    .lote-card-nombre {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--black);
+      margin-bottom: 11px;
+      line-height: 1.25;
+    }
+
+    .lote-card-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .stat-mini { display: flex; flex-direction: column; gap: 2px; }
+
+    .stat-mini-label {
+      font-size: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--gray);
+    }
+
+    .stat-mini-value {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--black-mid);
+    }
+
+    .lote-card-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 9px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--white);
+      text-decoration: none;
+      background: var(--black);
+      padding: 7px 16px;
+      border-radius: 2px;
+      transition: all 0.2s;
+    }
+
+    .lote-card-btn:hover { background: var(--red); }
+
+    .count-bar {
+      padding: 10px 20px;
+      background: var(--black);
+      font-size: 9px;
+      font-weight: 500;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .count-bar::before {
+      content: '';
+      width: 4px; height: 4px;
+      border-radius: 50%;
+      background: var(--red);
+      flex-shrink: 0;
+    }
+
+    /* ══ MAP ══ */
+    #map { flex: 1; z-index: 1; }
+
+    /* ══ MOBILE TOGGLE BTN ══ */
+    .mobile-toggle {
+      display: none;
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 600;
+      background: var(--black);
+      color: var(--white);
+      border: none;
+      padding: 11px 24px;
+      font-family: 'Outfit', sans-serif;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      border-radius: 40px;
+      cursor: pointer;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.35);
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .mobile-toggle .toggle-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--red);
+      flex-shrink: 0;
+    }
+
+    /* ══ POPUP ══ */
+    .leaflet-popup-content-wrapper {
+      border-radius: 3px !important;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.32) !important;
+      padding: 0 !important;
+      overflow: hidden;
+      border: none !important;
+    }
+
+    .leaflet-popup-content { margin: 0 !important; min-width: 220px; }
+
+    .popup-top {
+      background: var(--black);
+      padding: 12px 16px 10px;
+      border-bottom: 2px solid var(--red);
+    }
+
+    .popup-ciudad {
+      font-size: 8px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--red);
+      margin-bottom: 3px;
+    }
+
+    .popup-nombre {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--white);
+      line-height: 1.2;
+    }
+
+    .popup-body { padding: 12px 16px 14px; background: var(--white); }
+
+    .popup-sup {
+      font-size: 12px;
+      color: var(--gray-dark);
+      margin-bottom: 10px;
+    }
+
+    .popup-btn {
+      display: block;
+      text-align: center;
+      background: var(--red);
+      color: var(--white);
+      text-decoration: none;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      padding: 10px;
+      border-radius: 2px;
+      transition: background 0.15s;
+    }
+
+    .popup-btn:hover { background: var(--red-dark); }
+
+    .leaflet-popup-tip-container { display: none; }
+    .leaflet-popup-close-button {
+      color: rgba(255,255,255,0.45) !important;
+      top: 8px !important;
+      right: 10px !important;
+      font-size: 18px !important;
+    }
+
+    /* ══ RESPONSIVE — MÓVIL ══ */
+    @media (max-width: 768px) {
+      :root {
+        --header-h: 54px;
+      }
+
+      body { overflow: hidden; }
+
+      .layout {
+        flex-direction: column;
+      }
+
+      /* Sidebar se convierte en panel deslizante desde abajo */
+      .sidebar {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: 65vh;
+        border-right: none;
+        border-top: 2px solid var(--red);
+        border-radius: 14px 14px 0 0;
+        transform: translateY(100%);
+        transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 -8px 40px rgba(0,0,0,0.2);
+      }
+
+      .sidebar.open {
+        transform: translateY(0);
+      }
+
+      /* Handle de arrastre */
+      .sidebar-header::before {
+        content: '';
+        display: block;
+        width: 36px;
+        height: 4px;
+        background: rgba(255,255,255,0.2);
+        border-radius: 2px;
+        margin: 0 auto 14px;
+      }
+
+      #map {
+        width: 100%;
+        flex: none;
+        height: 100%;
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+      }
+
+      .mobile-toggle {
+        display: flex;
+      }
+
+      /* Cuando el panel está abierto, bajar el botón */
+      .sidebar.open ~ .mobile-toggle,
+      .layout.panel-open .mobile-toggle {
+        bottom: calc(65vh + 16px);
+      }
+
+      .lote-card-stats {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      /* Popup más ancho en móvil */
+      .leaflet-popup-content { min-width: 200px; }
+    }
+
+    @media (max-width: 380px) {
+      .lote-card-stats {
+        grid-template-columns: 1fr 1fr;
+      }
+      .lote-card-btn {
+        font-size: 8.5px;
+        padding: 7px 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <a href="https://cademaprop-web.vercel.app/" class="logo-wrap" target="_blank" rel="noopener">
+    <img
+      class="logo-img"
+      src="https://cademaprop-web.vercel.app/logos/logo.png"
+      alt="CADEMA Bienes Raíces"
+      onerror="this.style.display='none'; document.querySelector('.logo-fallback').style.display='flex'"
+    >
+    <div class="logo-fallback">
+      <span class="logo-fallback-name">CADEMA</span>
+      <span class="logo-fallback-sub">Bienes Raíces</span>
+    </div>
+  </a>
+
+  <div class="header-badge">
+    <span class="badge-dot"></span>
+    <span class="header-badge-text">Campana · Zárate · Escobar · Los Cardales</span>
+  </div>
+</header>
+
+<div class="layout" id="layout">
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-header-eyebrow">Fracciones disponibles</div>
+      <h2>Macrolotes</h2>
+      <p>Seleccioná un lote para ver en el mapa</p>
+    </div>
+    <div class="filter-bar" id="filterBar">
+      <button class="filter-btn active" data-ciudad="todas">Todas</button>
+    </div>
+    <div class="lote-list" id="loteList"></div>
+    <div class="count-bar" id="countBar">Cargando lotes…</div>
+  </aside>
+
+  <div id="map"></div>
+
+  <!-- Botón flotante móvil -->
+  <button class="mobile-toggle" id="mobileToggle" onclick="toggleSidebar()">
+    <span class="toggle-dot"></span>
+    <span id="toggleLabel">Ver lotes</span>
+  </button>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/script.js"></script>
+<script>
+  // Control del panel móvil
+  function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const layout = document.getElementById('layout');
+    const label = document.getElementById('toggleLabel');
+    const toggle = document.getElementById('mobileToggle');
+    const isOpen = sidebar.classList.contains('open');
+
+    if (isOpen) {
+      sidebar.classList.remove('open');
+      layout.classList.remove('panel-open');
+      label.textContent = 'Ver lotes';
+      toggle.style.bottom = '24px';
+    } else {
+      sidebar.classList.add('open');
+      layout.classList.add('panel-open');
+      label.textContent = 'Ver mapa';
+      toggle.style.bottom = 'calc(65vh + 16px)';
+    }
+  }
+
+  // Cerrar panel al hacer click en un marcador del mapa
+  document.getElementById('map').addEventListener('click', function() {
+    const sidebar = document.getElementById('sidebar');
+    if (sidebar.classList.contains('open') && window.innerWidth <= 768) {
+      toggleSidebar();
+    }
+  });
+</script>
+</body>
+</html>
