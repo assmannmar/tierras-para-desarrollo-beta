@@ -74,8 +74,8 @@
     },
 
     "valuacion": {
-      "precio_total_usd": 1300000,
-      "precio_m2_usd": 4,
+      "precio_total_usd": "XXXX",
+      "precio_m2_usd": "XXXX",
       "fecha_valuacion": "2026-04",
       "notas": 0
     }
